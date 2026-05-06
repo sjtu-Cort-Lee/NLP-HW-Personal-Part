@@ -1,0 +1,37 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Hugging Face / model caches
+.cache/
+hf_cache/
+huggingface/
+models/
+checkpoints/
+
+# Large datasets and model artifacts
+data/pg19_raw/
+data/*.arrow
+data/*.parquet
+data/*.jsonl
+data/*.zip
+data/*.tar
+data/*.tar.gz
+*.pt
+*.bin
+*.safetensors
+
+# Keep small course artifacts
+!data/pg19_sample_tiny.txt
+!results/raw/*.json
+!results/tables/*.md
+
+# Local runtime noise
+.DS_Store
+*.log

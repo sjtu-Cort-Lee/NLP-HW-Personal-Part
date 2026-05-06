@@ -1,0 +1,12 @@
+The old library was quiet after midnight. A student opened a notebook and copied
+a paragraph from a public domain novel, not for training a model, but for testing
+whether a language model could keep enough context while using a smaller cache.
+
+The passage was intentionally short. It mentioned a letter, a journey by train,
+and a conversation that returned to the same names several times. Repeated names
+help a cache policy reveal whether it keeps early sink tokens, recent local
+tokens, or a small set of important middle tokens selected by attention scores.
+
+This tiny file is only a smoke-test substitute for PG-19. It is not a benchmark
+sample, and any numbers produced from it should be reported as smoke-test
+results rather than final experimental conclusions.

@@ -1,0 +1,17 @@
+| dataset | split | method | ppl | mean_nll | max_kv | avg_kv | device | source |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| pg19 | test | dense | 31.1004 | 3.4372 | 1023 | 512.00 | cuda:0 | ppl_pg19.json |
+| pg19 | test | sliding_window | 36.2957 | 3.5917 | 256 | 224.09 | cuda:0 | ppl_pg19.json |
+| pg19 | test | streamingllm | 31.4272 | 3.4477 | 260 | 227.09 | cuda:0 | ppl_pg19.json |
+| pg19 | test | snapkv_lite | 31.2309 | 3.4414 | 288 | 247.60 | cuda:0 | ppl_pg19.json |
+| pg19 | test | sink_snapkv | 31.2339 | 3.4415 | 292 | 250.47 | cuda:0 | ppl_pg19.json |
+| text | validation | dense | 119.0749 | 4.7798 | 63 | 32.00 | cuda:0 | ppl_smoke.json |
+| text | validation | sliding_window | 156.3245 | 5.0519 | 16 | 14.10 | cuda:0 | ppl_smoke.json |
+| text | validation | streamingllm | 137.8975 | 4.9265 | 18 | 15.57 | cuda:0 | ppl_smoke.json |
+| text | validation | snapkv_lite | 131.1646 | 4.8765 | 20 | 16.98 | cuda:0 | ppl_smoke.json |
+| text | validation | sink_snapkv | 130.3357 | 4.8701 | 22 | 18.33 | cuda:0 | ppl_smoke.json |
+| wikitext | validation | dense | 30.1470 | 3.4061 | 1023 | 512.00 | cuda:0 | ppl_wikitext.json |
+| wikitext | validation | sliding_window | 42.9500 | 3.7600 | 256 | 224.09 | cuda:0 | ppl_wikitext.json |
+| wikitext | validation | streamingllm | 36.1872 | 3.5887 | 260 | 227.09 | cuda:0 | ppl_wikitext.json |
+| wikitext | validation | snapkv_lite | 36.1573 | 3.5879 | 288 | 247.60 | cuda:0 | ppl_wikitext.json |
+| wikitext | validation | sink_snapkv | 35.6847 | 3.5747 | 292 | 250.47 | cuda:0 | ppl_wikitext.json |

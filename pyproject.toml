@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kv-cache-compression-homework"
+version = "0.1.0"
+description = "Training-free KV cache compression experiments for EleutherAI/pythia-70m."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = { text = "MIT" }
+authors = [{ name = "NLP Course Homework" }]
+dependencies = [
+  "torch",
+  "transformers",
+  "datasets",
+  "accelerate",
+  "tqdm",
+  "numpy",
+  "pandas",
+  "pyyaml",
+  "psutil",
+  "pytest",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
