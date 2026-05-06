@@ -1,10 +1,17 @@
-torch
-transformers
-datasets
-accelerate
-tqdm
-numpy
-pandas
-pyyaml
-psutil
-pytest
+# Pinned environment used for the reported experiments.
+# The PyTorch CUDA 12.4 wheel is resolved from the PyTorch index below.
+--extra-index-url https://download.pytorch.org/whl/cu124
+
+torch==2.6.0+cu124
+transformers==5.8.0
+datasets==4.8.5
+accelerate==1.13.0
+huggingface_hub==1.13.0
+tokenizers==0.22.2
+safetensors==0.7.0
+tqdm==4.67.3
+numpy==2.4.4
+pandas==3.0.2
+PyYAML==6.0.3
+psutil==7.2.2
+pytest==9.0.3

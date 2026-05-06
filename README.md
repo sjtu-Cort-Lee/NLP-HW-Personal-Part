@@ -4,7 +4,7 @@
 
 本项目实现并评估了 `EleutherAI/pythia-70m` 上的 training-free KV Cache 压缩方法。实验不训练模型、不修改模型参数，只在推理阶段选择和裁剪 `past_key_values`。目标是比较不同 cache policy 在 WikiText 和 PG-19 上的困惑度、保留 KV token 数和生成 latency 指标之间的权衡。
 
-本仓库是课程项目级 Python 实现，不是优化 serving 系统。评估采用清晰的 token-by-token cached loop，便于复现实验和检查每一步 cache 裁剪行为。
+本仓库是课程项目级 Python 实现，评估采用清晰的 token-by-token cached loop，便于复现实验和检查每一步 cache 裁剪行为。
 
 ## 作业要求对应
 
@@ -135,6 +135,12 @@ PG-19 加载说明：新版 `datasets` 不再支持 Hugging Face 上旧式 `pg19
 
 ## 复现方式
 
+依赖文件分工：
+
+- `pyproject.toml` 描述本项目的本地包和基本依赖，用于 `pip install -e .`。
+- `requirements.txt` 固定了本次报告实际使用的实验环境版本，包括 `torch==2.6.0+cu124`、`transformers==5.8.0`、`datasets==4.8.5` 等。
+- README 使用 `requirements.txt` 作为主安装入口，是为了让复现实验时尽量得到和本报告一致的依赖版本。
+
 最小环境配置：
 
 ```bash
@@ -142,8 +148,8 @@ uv python install 3.11.14
 uv venv --python 3.11.14 .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install torch --index-url https://download.pytorch.org/whl/cu124
-python -m pip install -e .
+python -m pip install -r requirements.txt
+python -m pip install -e . --no-deps
 ```
 
 Windows PowerShell 只需要把激活命令换成：
@@ -169,11 +175,14 @@ make latency-pg19
 make report
 ```
 
+`make report` 会先写入 `results/raw/environment.json`，记录 Python、CUDA、GPU 名称和关键包版本，然后再更新 README 自动结果表。
+
 也可以直接调用脚本。示例：
 
 ```bash
 python scripts/run_ppl.py --dataset wikitext --split validation --max-samples 16 --max-tokens 1024 --methods dense sliding_window streamingllm snapkv_lite sink_snapkv --dtype float32 --output results/raw/ppl_wikitext.json
 python scripts/run_latency.py --dataset pg19 --split test --max-prompt-tokens 512 --max-new-tokens 64 --methods dense sliding_window streamingllm snapkv_lite sink_snapkv --dtype float32 --output results/raw/latency_pg19.json
+python scripts/collect_env.py --output results/raw/environment.json
 python scripts/summarize_results.py
 ```
 

@@ -15,6 +15,7 @@ dependencies = [
   "transformers",
   "datasets",
   "accelerate",
+  "huggingface_hub",
   "tqdm",
   "numpy",
   "pandas",

@@ -1,0 +1,24 @@
+{
+  "generated_at_utc": "2026-05-06T13:22:22.109337+00:00",
+  "python": "3.11.14",
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "packages": {
+    "torch": "2.6.0+cu124",
+    "transformers": "5.8.0",
+    "datasets": "4.8.5",
+    "accelerate": "1.13.0",
+    "huggingface_hub": "1.13.0",
+    "tokenizers": "0.22.2",
+    "safetensors": "0.7.0",
+    "tqdm": "4.67.3",
+    "numpy": "2.4.4",
+    "pandas": "3.0.2",
+    "PyYAML": "6.0.3",
+    "psutil": "7.2.2",
+    "pytest": "9.0.3"
+  },
+  "torch_cuda_version": "12.4",
+  "cuda_available": true,
+  "cuda_device_count": 1,
+  "cuda_device_name": "NVIDIA GeForce RTX 4060 Laptop GPU"
+}

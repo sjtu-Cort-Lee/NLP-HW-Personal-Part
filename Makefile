@@ -1,15 +1,15 @@
 PYTHON ?= .venv/bin/python
 MODEL ?= EleutherAI/pythia-70m
 
-.PHONY: install test smoke ppl-wikitext ppl-pg19 ppl-pg19-tiny latency-wikitext latency-pg19 latency-tiny report quick
+.PHONY: install test smoke ppl-wikitext ppl-pg19 ppl-pg19-tiny latency-wikitext latency-pg19 latency-tiny env report quick
 
 install:
 	uv python install 3.11.14
 	test -d .venv || uv venv --python 3.11.14 .venv
 	$(PYTHON) -m ensurepip --upgrade
 	$(PYTHON) -m pip install --upgrade pip
-	$(PYTHON) -m pip install torch --index-url https://download.pytorch.org/whl/cu124
-	$(PYTHON) -m pip install -e .
+	$(PYTHON) -m pip install -r requirements.txt
+	$(PYTHON) -m pip install -e . --no-deps
 
 test:
 	$(PYTHON) -m pytest -q
@@ -37,7 +37,11 @@ latency-pg19:
 latency-tiny:
 	$(PYTHON) scripts/run_latency.py --model $(MODEL) --dataset text --text-file data/pg19_sample_tiny.txt --max-prompt-tokens 512 --max-new-tokens 64 --methods dense sliding_window streamingllm snapkv_lite sink_snapkv --dtype float32 --output results/raw/latency_tiny.json
 
+env:
+	$(PYTHON) scripts/collect_env.py --output results/raw/environment.json
+
 report:
+	$(PYTHON) scripts/collect_env.py --output results/raw/environment.json
 	$(PYTHON) scripts/summarize_results.py
 
 quick: test smoke report
