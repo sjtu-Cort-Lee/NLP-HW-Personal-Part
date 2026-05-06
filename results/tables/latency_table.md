@@ -1,10 +1,10 @@
 | dataset | split | method | TTFT ms | TPOT ms | new tok/s | e2e tok/s | peak CUDA MB | device | source |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| pg19 | test | dense | 15.18 | 6.50 | 150.78 | 525.37 | 314.72 | cuda:0 | latency_pg19.json |
-| pg19 | test | sliding_window | 8.62 | 5.95 | 166.89 | 581.50 | 314.72 | cuda:0 | latency_pg19.json |
-| pg19 | test | streamingllm | 8.87 | 5.70 | 174.06 | 606.49 | 314.72 | cuda:0 | latency_pg19.json |
-| pg19 | test | snapkv_lite | 20.93 | 6.43 | 150.26 | 523.56 | 319.37 | cuda:0 | latency_pg19.json |
-| pg19 | test | sink_snapkv | 11.87 | 6.13 | 160.84 | 560.44 | 319.37 | cuda:0 | latency_pg19.json |
+| pg19 | test | dense | 38.03 | 5.37 | 169.97 | 1529.69 | 394.99 | cuda:0 | latency_pg19.json |
+| pg19 | test | sliding_window | 16.68 | 5.80 | 167.59 | 1508.33 | 390.69 | cuda:0 | latency_pg19.json |
+| pg19 | test | streamingllm | 16.12 | 5.37 | 180.61 | 1625.48 | 390.69 | cuda:0 | latency_pg19.json |
+| pg19 | test | snapkv_lite | 48.85 | 6.04 | 148.99 | 1340.88 | 454.69 | cuda:0 | latency_pg19.json |
+| pg19 | test | sink_snapkv | 19.34 | 5.89 | 164.04 | 1476.39 | 454.69 | cuda:0 | latency_pg19.json |
 | text | validation | dense | 13.02 | 7.44 | 122.83 | 1105.44 | 294.25 | cuda:0 | latency_smoke.json |
 | text | validation | streamingllm | 9.12 | 5.38 | 171.06 | 1539.55 | 293.55 | cuda:0 | latency_smoke.json |
 | text | validation | sink_snapkv | 20.13 | 8.17 | 103.51 | 931.57 | 294.30 | cuda:0 | latency_smoke.json |

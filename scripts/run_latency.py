@@ -19,7 +19,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", default=DEFAULT_MODEL_NAME)
     parser.add_argument("--dataset", choices=["wikitext", "pg19", "text"], default="text")
     parser.add_argument("--split", default="validation")
-    parser.add_argument("--text-file", default="data/pg19_sample_tiny.txt")
+    parser.add_argument("--text-file")
     parser.add_argument("--max-samples", type=int, default=1)
     parser.add_argument("--max-chars", type=int, default=200000)
     parser.add_argument("--methods", nargs="+", choices=SUPPORTED_METHODS, default=list(SUPPORTED_METHODS))
