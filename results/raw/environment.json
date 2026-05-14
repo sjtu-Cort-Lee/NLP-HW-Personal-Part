@@ -1,7 +1,7 @@
 {
-  "generated_at_utc": "2026-05-06T13:22:22.109337+00:00",
+  "generated_at_utc": "2026-05-14T02:18:01.279238+00:00",
   "python": "3.11.14",
-  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "platform": "Linux-6.6.114.1-microsoft-standard-WSL2-x86_64-with-glibc2.39",
   "packages": {
     "torch": "2.6.0+cu124",
     "transformers": "5.8.0",

@@ -29,9 +29,9 @@ class CachePolicyConfig:
     """Configuration for a training-free KV cache policy."""
 
     method: str = "dense"
-    window_size: int = 256
-    sink_size: int = 4
-    important_size: int = 32
+    window_size: int = 240
+    sink_size: int = 8
+    important_size: int = 40
     allow_attention_fallback: bool = True
 
     def __post_init__(self) -> None:

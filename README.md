@@ -37,19 +37,27 @@
 
 正式 PPL 设置：
 
-- WikiText：`validation` split，`max_samples=16`，`max_tokens=1024`。
-- PG-19：`test` split，单个真实长文本 sample，`max_tokens=1024`。
-- cache 参数：`window_size=256`，`sink_size=4`，`important_size=32`。
+- WikiText：`Salesforce/wikitext`，config 为 `wikitext-2-raw-v1`，`validation` split，`max_samples=16`，`max_chars=200000`，`max_tokens=1024`。
+- PG-19：`test` split，单个真实长文本 sample，`max_samples=1`，`max_chars=200000`，`max_tokens=1024`。
+- cache 参数（PPL 和 latency 均使用）：`window_size=240`，`sink_size=8`，`important_size=40`。本次重新实验将旧设置 `256/4/32` 调整为 `240/8/40`，总 KV budget 接近原设置，但把一部分 recent window 预算转给 sink token 和 attention-selected token。
 - dtype：`float32`。当前环境中 Pythia-70M 的 float16 logits 会出现非有限值，因此正式实验使用 float32 保证 JSON 结果有效。
 
 正式 latency 设置：
 
-- WikiText：`max_prompt_tokens=512`，`max_new_tokens=64`。
-- PG-19：`max_prompt_tokens=512`，`max_new_tokens=64`。
+- WikiText：`validation` split，`max_samples=16`，`max_chars=200000`，`max_prompt_tokens=512`，`max_new_tokens=64`。
+- PG-19：`test` split，`max_samples=1`，`max_chars=200000`，`max_prompt_tokens=512`，`max_new_tokens=64`。
 - 指标：TTFT、TPOT、new-token throughput、end-to-end throughput、peak CUDA memory。
 - 设备：`cuda:0`。
 
-PG-19 加载说明：新版 `datasets` 不再支持 Hugging Face 上旧式 `pg19.py` dataset script。本项目会 fallback 到 `deepmind/pg19` 的官方 split 文件列表，并下载 test split 的真实文本到 `data/pg19_raw/`；该目录不会被提交。
+复现性固定项：
+
+- 随机种子：`scripts/run_ppl.py` 和 `scripts/run_latency.py` 都调用 `set_seed(0)`；模型处于 `eval()`，latency 使用 greedy `argmax` 解码。
+- 模型和 tokenizer：`EleutherAI/pythia-70m`。本次运行的本地 Hugging Face snapshot 为 `a39f36b100fe8a5377810d56c3f4789b9c53ac42`。
+- WikiText：本次运行的本地 Hugging Face dataset snapshot 为 `b08601e04326c79dfdd32d625aee71d232d685c3`。
+- PG-19：新版 `datasets` 不再支持 Hugging Face 上旧式 `pg19.py` dataset script。本项目会 fallback 到 `deepmind/pg19` 的官方 split 文件列表；本次运行的 `deepmind/pg19` snapshot 为 `4d28bd77e66947ad3835cf78ed7aaeb4dd87ad8b`，实际选择排序后的第一个 test 文件 `test_10146.txt`，下载到 `data/pg19_raw/`。该目录不会被提交。
+- 上述 snapshot 用于标识本次实验实际使用的上游文件；如果未来 Hugging Face 上游内容发生变化，需要确保本地缓存或下载版本仍对应这些 snapshot。
+- 环境快照：`results/raw/environment.json` 记录本次 Python、Linux kernel、CUDA、GPU 和关键包版本；当前正式结果来自 `2026-05-14T02:18:01.279238+00:00` 生成的环境快照。
+- latency 结果不是 bitwise deterministic。即使参数、模型和数据相同，TTFT/TPOT/throughput 也会随 GPU 负载、驱动调度和缓存状态有小幅波动；PPL 结果更适合作为严格数值复现目标。
 
 ## 效果摘要
 
@@ -57,35 +65,35 @@ PG-19 加载说明：新版 `datasets` 不再支持 Hugging Face 上旧式 `pg19
 
 | dataset | method | PPL | PPL Δ vs dense | avg KV reduction |
 | --- | --- | --- | --- | --- |
-| WikiText | sliding_window | 42.9500 | +42.47% | 56.23% |
-| WikiText | streamingllm | 36.1872 | +20.04% | 55.65% |
-| WikiText | snapkv_lite | 36.1573 | +19.94% | 51.64% |
-| WikiText | sink_snapkv | 35.6847 | +18.37% | 51.08% |
-| PG-19 | sliding_window | 36.2957 | +16.70% | 56.23% |
-| PG-19 | streamingllm | 31.4272 | +1.05% | 55.65% |
-| PG-19 | snapkv_lite | 31.2309 | +0.42% | 51.64% |
-| PG-19 | sink_snapkv | 31.2339 | +0.43% | 51.08% |
+| WikiText | sliding_window | 42.9560 | +42.49% | 58.60% |
+| WikiText | streamingllm | 35.2546 | +16.94% | 57.41% |
+| WikiText | snapkv_lite | 36.1304 | +19.85% | 52.77% |
+| WikiText | sink_snapkv | 34.9901 | +16.06% | 51.64% |
+| PG-19 | sliding_window | 37.3152 | +19.98% | 58.60% |
+| PG-19 | streamingllm | 31.9968 | +2.88% | 57.41% |
+| PG-19 | snapkv_lite | 31.4713 | +1.19% | 52.77% |
+| PG-19 | sink_snapkv | 31.3827 | +0.91% | 51.64% |
 
 加速结果以 new-token throughput 相对 `dense` 的变化衡量。注意 attention-based 方法需要额外请求 attention weights，因此吞吐不一定更高。
 
 | dataset | method | throughput | throughput Δ vs dense | TPOT Δ vs dense | avg KV reduction |
 | --- | --- | --- | --- | --- | --- |
-| WikiText | sliding_window | 164.10 tok/s | +0.52% | +2.10% | 52.90% |
-| WikiText | streamingllm | 173.83 tok/s | +6.48% | -4.26% | 52.16% |
-| WikiText | snapkv_lite | 152.70 tok/s | -6.46% | +7.11% | 47.01% |
-| WikiText | sink_snapkv | 152.87 tok/s | -6.36% | +8.69% | 46.27% |
-| PG-19 | sliding_window | 167.59 tok/s | -1.40% | +7.88% | 52.90% |
-| PG-19 | streamingllm | 180.61 tok/s | +6.26% | -0.08% | 52.16% |
-| PG-19 | snapkv_lite | 148.99 tok/s | -12.34% | +12.47% | 47.01% |
-| PG-19 | sink_snapkv | 164.04 tok/s | -3.48% | +9.54% | 46.27% |
+| WikiText | sliding_window | 126.99 tok/s | -10.77% | +15.73% | 55.84% |
+| WikiText | streamingllm | 147.68 tok/s | +3.77% | -1.12% | 54.37% |
+| WikiText | snapkv_lite | 123.91 tok/s | -12.93% | +16.14% | 48.48% |
+| WikiText | sink_snapkv | 122.92 tok/s | -13.63% | +19.25% | 47.01% |
+| PG-19 | sliding_window | 121.80 tok/s | -13.97% | +18.52% | 55.84% |
+| PG-19 | streamingllm | 123.79 tok/s | -12.56% | +15.54% | 54.37% |
+| PG-19 | snapkv_lite | 107.05 tok/s | -24.39% | +32.76% | 48.48% |
+| PG-19 | sink_snapkv | 104.23 tok/s | -26.38% | +37.58% | 47.01% |
 
 主要观察：
 
-- `sliding_window` 压缩最强，但 PPL 损失也最大，尤其在 WikiText 上 PPL 从 `30.1470` 升至 `42.9500`。
-- `streamingllm` 在 PG-19 上保持了较好的质量，PPL 只比 dense 高 `1.05%`，同时平均 KV token 减少 `55.65%`。
-- `snapkv_lite` 和 `sink_snapkv` 在 PG-19 上最接近 dense PPL，分别只高 `0.42%` 和 `0.43%`。
-- `sink_snapkv` 在 WikiText 上是压缩方法中 PPL 最低的一个，PPL 为 `35.6847`，但由于 attention bookkeeping，latency throughput 低于 dense。
-- 生成 latency 的收益主要出现在 `streamingllm`：WikiText throughput 提升 `6.48%`，PG-19 提升 `6.26%`。
+- `sliding_window` 压缩最强，但 PPL 损失也最大，尤其在 WikiText 上 PPL 从 `30.1470` 升至 `42.9560`。
+- `streamingllm` 在 WikiText 上保持了较好的质量，PPL 比 dense 高 `16.94%`，同时平均 KV token 减少 `57.41%`。
+- `sink_snapkv` 在 PG-19 上最接近 dense PPL，只高 `0.91%`，平均 KV token 减少 `51.64%`。
+- `sink_snapkv` 在 WikiText 上是压缩方法中 PPL 最低的一个，PPL 为 `34.9901`，但由于 attention bookkeeping，latency throughput 低于 dense。
+- 本次 latency 重测中，只有 WikiText 上的 `streamingllm` new-token throughput 高于 dense，提升 `3.77%`；PG-19 上所有压缩策略的吞吐均低于 dense。
 - attention-based 方法虽然保留了更有选择性的中间 token，但请求 attention weights 的额外开销抵消了小模型上的部分速度收益。
 
 ## 自动结果表
@@ -98,38 +106,38 @@ PG-19 加载说明：新版 `datasets` 不再支持 Hugging Face 上旧式 `pg19
 | dataset | split | method | ppl | mean_nll | max_kv | avg_kv | device | source |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | pg19 | test | dense | 31.1004 | 3.4372 | 1023 | 512.00 | cuda:0 | ppl_pg19.json |
-| pg19 | test | sliding_window | 36.2957 | 3.5917 | 256 | 224.09 | cuda:0 | ppl_pg19.json |
-| pg19 | test | streamingllm | 31.4272 | 3.4477 | 260 | 227.09 | cuda:0 | ppl_pg19.json |
-| pg19 | test | snapkv_lite | 31.2309 | 3.4414 | 288 | 247.60 | cuda:0 | ppl_pg19.json |
-| pg19 | test | sink_snapkv | 31.2339 | 3.4415 | 292 | 250.47 | cuda:0 | ppl_pg19.json |
+| pg19 | test | sliding_window | 37.3152 | 3.6194 | 240 | 211.96 | cuda:0 | ppl_pg19.json |
+| pg19 | test | streamingllm | 31.9968 | 3.4656 | 248 | 218.06 | cuda:0 | ppl_pg19.json |
+| pg19 | test | snapkv_lite | 31.4713 | 3.4491 | 280 | 241.82 | cuda:0 | ppl_pg19.json |
+| pg19 | test | sink_snapkv | 31.3827 | 3.4463 | 288 | 247.60 | cuda:0 | ppl_pg19.json |
 | text | validation | dense | 119.0749 | 4.7798 | 63 | 32.00 | cuda:0 | ppl_smoke.json |
 | text | validation | sliding_window | 156.3245 | 5.0519 | 16 | 14.10 | cuda:0 | ppl_smoke.json |
 | text | validation | streamingllm | 137.8975 | 4.9265 | 18 | 15.57 | cuda:0 | ppl_smoke.json |
 | text | validation | snapkv_lite | 131.1646 | 4.8765 | 20 | 16.98 | cuda:0 | ppl_smoke.json |
 | text | validation | sink_snapkv | 130.3357 | 4.8701 | 22 | 18.33 | cuda:0 | ppl_smoke.json |
 | wikitext | validation | dense | 30.1470 | 3.4061 | 1023 | 512.00 | cuda:0 | ppl_wikitext.json |
-| wikitext | validation | sliding_window | 42.9500 | 3.7600 | 256 | 224.09 | cuda:0 | ppl_wikitext.json |
-| wikitext | validation | streamingllm | 36.1872 | 3.5887 | 260 | 227.09 | cuda:0 | ppl_wikitext.json |
-| wikitext | validation | snapkv_lite | 36.1573 | 3.5879 | 288 | 247.60 | cuda:0 | ppl_wikitext.json |
-| wikitext | validation | sink_snapkv | 35.6847 | 3.5747 | 292 | 250.47 | cuda:0 | ppl_wikitext.json |
+| wikitext | validation | sliding_window | 42.9560 | 3.7602 | 240 | 211.96 | cuda:0 | ppl_wikitext.json |
+| wikitext | validation | streamingllm | 35.2546 | 3.5626 | 248 | 218.06 | cuda:0 | ppl_wikitext.json |
+| wikitext | validation | snapkv_lite | 36.1304 | 3.5871 | 280 | 241.82 | cuda:0 | ppl_wikitext.json |
+| wikitext | validation | sink_snapkv | 34.9901 | 3.5551 | 288 | 247.60 | cuda:0 | ppl_wikitext.json |
 
 ### Latency Results
 
 | dataset | split | method | TTFT ms | TPOT ms | new tok/s | e2e tok/s | peak CUDA MB | device | source |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| pg19 | test | dense | 38.03 | 5.37 | 169.97 | 1529.69 | 394.99 | cuda:0 | latency_pg19.json |
-| pg19 | test | sliding_window | 16.68 | 5.80 | 167.59 | 1508.33 | 390.69 | cuda:0 | latency_pg19.json |
-| pg19 | test | streamingllm | 16.12 | 5.37 | 180.61 | 1625.48 | 390.69 | cuda:0 | latency_pg19.json |
-| pg19 | test | snapkv_lite | 48.85 | 6.04 | 148.99 | 1340.88 | 454.69 | cuda:0 | latency_pg19.json |
-| pg19 | test | sink_snapkv | 19.34 | 5.89 | 164.04 | 1476.39 | 454.69 | cuda:0 | latency_pg19.json |
+| pg19 | test | dense | 25.29 | 6.77 | 141.58 | 1274.18 | 394.99 | cuda:0 | latency_pg19.json |
+| pg19 | test | sliding_window | 19.66 | 8.03 | 121.80 | 1096.23 | 390.69 | cuda:0 | latency_pg19.json |
+| pg19 | test | streamingllm | 23.90 | 7.83 | 123.79 | 1114.15 | 390.69 | cuda:0 | latency_pg19.json |
+| pg19 | test | snapkv_lite | 31.26 | 8.99 | 107.05 | 963.46 | 454.69 | cuda:0 | latency_pg19.json |
+| pg19 | test | sink_snapkv | 26.88 | 9.32 | 104.23 | 938.08 | 454.69 | cuda:0 | latency_pg19.json |
 | text | validation | dense | 13.02 | 7.44 | 122.83 | 1105.44 | 294.25 | cuda:0 | latency_smoke.json |
 | text | validation | streamingllm | 9.12 | 5.38 | 171.06 | 1539.55 | 293.55 | cuda:0 | latency_smoke.json |
 | text | validation | sink_snapkv | 20.13 | 8.17 | 103.51 | 931.57 | 294.30 | cuda:0 | latency_smoke.json |
-| wikitext | validation | dense | 25.92 | 5.81 | 163.25 | 1469.27 | 394.99 | cuda:0 | latency_wikitext.json |
-| wikitext | validation | sliding_window | 16.21 | 5.93 | 164.10 | 1476.90 | 390.69 | cuda:0 | latency_wikitext.json |
-| wikitext | validation | streamingllm | 17.65 | 5.56 | 173.83 | 1564.45 | 390.69 | cuda:0 | latency_wikitext.json |
-| wikitext | validation | snapkv_lite | 26.98 | 6.22 | 152.70 | 1374.30 | 454.69 | cuda:0 | latency_wikitext.json |
-| wikitext | validation | sink_snapkv | 20.71 | 6.32 | 152.87 | 1375.83 | 454.69 | cuda:0 | latency_wikitext.json |
+| wikitext | validation | dense | 32.59 | 6.62 | 142.31 | 1280.82 | 394.99 | cuda:0 | latency_wikitext.json |
+| wikitext | validation | sliding_window | 21.25 | 7.66 | 126.99 | 1142.89 | 390.69 | cuda:0 | latency_wikitext.json |
+| wikitext | validation | streamingllm | 20.95 | 6.55 | 147.68 | 1329.08 | 390.69 | cuda:0 | latency_wikitext.json |
+| wikitext | validation | snapkv_lite | 32.06 | 7.69 | 123.91 | 1115.16 | 454.69 | cuda:0 | latency_wikitext.json |
+| wikitext | validation | sink_snapkv | 23.25 | 7.90 | 122.92 | 1106.26 | 454.69 | cuda:0 | latency_wikitext.json |
 
 <!-- RESULTS_END -->
 
@@ -168,20 +176,24 @@ make smoke
 正式实验：
 
 ```bash
-make ppl-wikitext
-make ppl-pg19
-make latency-wikitext
-make latency-pg19
+make DEVICE=cuda:0 DTYPE=float32 ppl-wikitext
+make DEVICE=cuda:0 DTYPE=float32 ppl-pg19
+make DEVICE=cuda:0 DTYPE=float32 latency-wikitext
+make DEVICE=cuda:0 DTYPE=float32 latency-pg19
 make report
 ```
 
 `make report` 会先写入 `results/raw/environment.json`，记录 Python、CUDA、GPU 名称和关键包版本，然后再更新 README 自动结果表。
 
-也可以直接调用脚本。示例：
+正式实验默认使用 `MODEL=EleutherAI/pythia-70m`、`WINDOW_SIZE=240`、`SINK_SIZE=8`、`IMPORTANT_SIZE=40`、`DTYPE=float32`。`DEVICE` 默认为 `auto`，本报告的正式结果是在 `cuda:0` 上生成；严格复现时建议显式传入 `DEVICE=cuda:0`。
+
+也可以直接调用脚本。以下四条命令对应本报告的四个正式 JSON 结果文件：
 
 ```bash
-python scripts/run_ppl.py --dataset wikitext --split validation --max-samples 16 --max-tokens 1024 --methods dense sliding_window streamingllm snapkv_lite sink_snapkv --dtype float32 --output results/raw/ppl_wikitext.json
-python scripts/run_latency.py --dataset pg19 --split test --max-prompt-tokens 512 --max-new-tokens 64 --methods dense sliding_window streamingllm snapkv_lite sink_snapkv --dtype float32 --output results/raw/latency_pg19.json
+python scripts/run_ppl.py --model EleutherAI/pythia-70m --dataset wikitext --split validation --max-samples 16 --max-chars 200000 --max-tokens 1024 --methods dense sliding_window streamingllm snapkv_lite sink_snapkv --window-size 240 --sink-size 8 --important-size 40 --device cuda:0 --dtype float32 --output results/raw/ppl_wikitext.json
+python scripts/run_ppl.py --model EleutherAI/pythia-70m --dataset pg19 --split test --max-samples 1 --max-chars 200000 --max-tokens 1024 --methods dense sliding_window streamingllm snapkv_lite sink_snapkv --window-size 240 --sink-size 8 --important-size 40 --device cuda:0 --dtype float32 --output results/raw/ppl_pg19.json
+python scripts/run_latency.py --model EleutherAI/pythia-70m --dataset wikitext --split validation --max-samples 16 --max-chars 200000 --max-prompt-tokens 512 --max-new-tokens 64 --methods dense sliding_window streamingllm snapkv_lite sink_snapkv --window-size 240 --sink-size 8 --important-size 40 --device cuda:0 --dtype float32 --output results/raw/latency_wikitext.json
+python scripts/run_latency.py --model EleutherAI/pythia-70m --dataset pg19 --split test --max-samples 1 --max-chars 200000 --max-prompt-tokens 512 --max-new-tokens 64 --methods dense sliding_window streamingllm snapkv_lite sink_snapkv --window-size 240 --sink-size 8 --important-size 40 --device cuda:0 --dtype float32 --output results/raw/latency_pg19.json
 python scripts/collect_env.py --output results/raw/environment.json
 python scripts/summarize_results.py
 ```
